@@ -33,7 +33,7 @@ namespace FamilyBoutAPI
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
             });
 
-            app.UseAuthentication();
+            //app.UseAuthentication();
 
             app.MapGet("/hehe", (string? x) =>
             {
