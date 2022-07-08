@@ -41,7 +41,8 @@ namespace FamilyBoutAPI
 
             app.MapGet("/addview", () =>
             {
-                return views++;
+                views++;
+                return views;
             });
 
 
