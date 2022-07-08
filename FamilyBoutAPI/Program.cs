@@ -46,7 +46,7 @@ namespace FamilyBoutAPI
                 return new { views };
             });
 
-            app.MapPost("/login", (bool acc) => new {accepted = acc});
+            app.MapGet("/login", (bool acc) => new {accepted = acc});
 
             app.Run();
         }
