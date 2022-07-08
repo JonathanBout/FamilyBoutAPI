@@ -5,9 +5,11 @@ namespace FamilyBoutAPI
 {
     public class Program
     {
+        static int views = 0;
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
 
             // Add services to the container.
             builder.Services.AddAuthorization();
@@ -18,13 +20,6 @@ namespace FamilyBoutAPI
             });
 
             var app = builder.Build();
-
-            // Configure the HTTP request pipeline.
-
-            //if (!app.Environment.IsDevelopment())
-            //{
-            //    app.UseHttpsRedirection();
-            //}
 
             app.UseAuthorization();
             
@@ -42,6 +37,11 @@ namespace FamilyBoutAPI
                     return "Up: " + value?.ToUpper() + " Low: " + value?.ToLower();
                 }
                 return "Hehe :)";
+            });
+
+            app.MapGet("/addview", () =>
+            {
+                return views++;
             });
 
 
