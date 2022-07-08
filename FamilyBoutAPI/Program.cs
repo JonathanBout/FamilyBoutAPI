@@ -42,7 +42,7 @@ namespace FamilyBoutAPI
             app.MapGet("/addview", () =>
             {
                 views++;
-                return views;
+                return $"{{\"views\": {views}}}";
             });
 
 
