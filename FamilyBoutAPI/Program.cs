@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.HttpOverrides;
+using Newtonsoft.Json;
 using System.Net;
 
 namespace FamilyBoutAPI
@@ -42,9 +43,10 @@ namespace FamilyBoutAPI
             app.MapGet("/addview", () =>
             {
                 views++;
-                return $"{{\"views\": {views}}}";
+                return new { views };
             });
 
+            app.MapPost("/login", (bool acc) => new {accepted = acc});
 
             app.Run();
         }
