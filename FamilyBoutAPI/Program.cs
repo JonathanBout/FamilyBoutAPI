@@ -47,7 +47,7 @@ namespace FamilyBoutAPI
                 return new { views };
             });
 
-            app.MapPost("/login", async (HttpRequest rq) =>
+            app.MapPost("/getcode", async (HttpRequest rq) =>
             {
                 string body = "";
                 using (StreamReader stream = new StreamReader(rq.Body))
@@ -55,7 +55,33 @@ namespace FamilyBoutAPI
                     body = await stream.ReadToEndAsync();
                 }
 
-                return string.Join("><", body.Split(','));
+                int? userCode = null;
+                dynamic? jsonObj = JsonConvert.DeserializeObject<dynamic>(body);
+
+                if (jsonObj is not null)
+                {
+                    int nameCode = 1;
+                    if (jsonObj.username)
+                    {
+                        for (int i = 0; i < jsonObj.username.Length; i++)
+                        {
+                            char c = jsonObj.username[i];
+                            nameCode *= c + i;
+                        }
+                    }
+                    int passwordCode = 1;
+                    if (jsonObj.password)
+                    {
+                        for (int i = 0; i < jsonObj.password.Length; i++)
+                        {
+                            char c = jsonObj.password[i];
+                            nameCode *= c + i;
+                        }
+                    }
+                    userCode = nameCode + passwordCode;
+                }
+
+                return new { userCode };
             });
 
             app.Run();
