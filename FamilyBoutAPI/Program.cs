@@ -8,10 +8,15 @@ namespace FamilyBoutAPI
     public class Program
     {
         static int views = 0;
+        private protected static Dictionary<string, long> users = new Dictionary<string, long>();
+
         public static void Main(string[] args)
         {
+            #region init
             var builder = WebApplication.CreateBuilder(args);
 
+            users.Add("Jonathan", GetCode("Jonathan", "wachtwoord"));
+            users.Add("Robert Jan", GetCode("Robert Jan", "wachtwoord"));
 
             // Add services to the container.
             builder.Services.AddAuthorization();
@@ -29,9 +34,9 @@ namespace FamilyBoutAPI
             {
                 ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
             });
+            #endregion
 
-            //app.UseAuthentication();
-
+            //Test endpoint
             app.MapGet("/hehe", (string? x) =>
             {
                 if (x is string value)
@@ -41,6 +46,7 @@ namespace FamilyBoutAPI
                 return "Hehe :)";
             });
 
+            //View counter endpoint
             app.MapGet("/addview", (bool? addup) =>
             {
                 if (addup is null || addup == true)
@@ -48,44 +54,117 @@ namespace FamilyBoutAPI
                 return new { views };
             });
 
-            app.MapPost("/getcode", async (HttpRequest rq) =>
+            //Login endpoint
+            app.MapPost("/login", async (HttpRequest rq) =>
             {
-                string body = "";
-                using (StreamReader stream = new StreamReader(rq.Body))
+                int statusCode = 500;
+
+                long? userCode = null;
+
+                var dict = await FromBody(rq);
+
+                if (dict is not null)
                 {
-                    body = await stream.ReadToEndAsync();
-                }
-
-                int? userCode = null;
-                dynamic? jsonObj = JsonConvert.DeserializeObject<dynamic>(body);
-
-                if (jsonObj is not null)
+                    if (dict["username"] is string username && dict["password"] is string password)
+                    {
+                        userCode = GetCode(username, password);
+                        if (users.TryGetValue(username, out long code) && code == userCode)
+                        {
+                            statusCode = 200;
+                            return Results.Ok(new { code = userCode?.ToString("X")});
+                        }else
+                        {
+                            statusCode = StatusCodes.Status401Unauthorized;
+                        }
+                    }else
+                    {
+                        statusCode = StatusCodes.Status400BadRequest;
+                    }
+                }else
                 {
-                    int nameCode = 1;
-                    if (jsonObj.username is string username)
-                    {
-                        for (int i = 0; i < username.Length; i++)
-                        {
-                            char c = username[i];
-                            nameCode *= c + i;
-                        }
-                    }
-                    int passwordCode = 1;
-                    if (jsonObj.password is string password)
-                    {
-                        for (int i = 0; i < password.Length; i++)
-                        {
-                            char c = password[i];
-                            nameCode *= c + i;
-                        }
-                    }
-                    userCode = nameCode + passwordCode;
+                    statusCode = StatusCodes.Status500InternalServerError;
                 }
+                return Results.Problem(statusCode: statusCode);
+            });
 
-                return new { userCode };
+            app.MapPost("/passwordchange", async (HttpRequest rq) =>
+            {
+                var dict = await FromBody(rq);
+
+                if (dict is not null && dict.TryGetValue("code", out object? codeObj) &&
+                        dict.TryGetValue("oldpassword", out object? oldPasswdObj) &&
+                        dict.TryGetValue("newpassword", out object? newPasswdObj) &&
+                        dict.TryGetValue("username"   , out object? usernameObj))
+                {
+                    if (Convert.ToInt64(codeObj as string, 16) is long code && oldPasswdObj is string oldPasswd &&
+                            newPasswdObj is string newPasswd && usernameObj is string username)
+                    {
+                        if (Authorize(username, oldPasswd) && Authorize(username, code))
+                        {
+                            users[username] = GetCode(username, newPasswd);
+                            return Results.Ok(new { code = users[username].ToString("X") });
+                        }
+                        else return Results.Unauthorized();
+                    }
+                    else return Results.BadRequest("Can't parse obj to string or to int.");
+                }
+                else return Results.BadRequest("Values are incomplete");
+            });
+
+            app.MapGet("/authorize", (string username, string code) =>
+            {
+                return new { success = Authorize(username, Convert.ToInt64(code, 16)) };
             });
 
             app.Run();
+        }
+        
+        protected private static JsonSerializerSettings _jsonSettings = new JsonSerializerSettings
+        {
+            TypeNameHandling = TypeNameHandling.All,
+            TypeNameAssemblyFormatHandling = TypeNameAssemblyFormatHandling.Full
+        };
+
+        protected private static Dictionary<string, object>? FromJSON(string json)
+        {
+            return JsonConvert.DeserializeObject<Dictionary<string, object>>(json, _jsonSettings);
+        }
+
+        protected private static async Task<Dictionary<string, object>?> FromBody(HttpRequest rq)
+        {
+            string body = "";
+            using (StreamReader stream = new StreamReader(rq.Body))
+            {
+                body = await stream.ReadToEndAsync();
+            }
+            return FromJSON(body);
+        }
+
+        protected private static long GetCode(string username, string password)
+        {
+            long nameCode = 1;
+            for (int i = 0; i < username.Length; i++)
+            {
+                char c = username[i];
+                nameCode *= c * 50 + i * 10;
+            }
+            long passwordCode = 1;
+            for (int i = 0; i < password.Length; i++)
+            {
+                char c = password[i];
+                passwordCode *= c * 30 + i * 15;
+            }
+            return nameCode / 50 + passwordCode / 30;
+        }
+
+        protected private static bool Authorize(string username, string password)
+        {
+            return users[username] == GetCode(username, password);
+        }
+
+        protected private static bool Authorize(string username, long code)
+        {
+            return users[username] == code;
         }
     }
 }
