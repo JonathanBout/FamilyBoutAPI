@@ -15,9 +15,13 @@ namespace FamilyBoutAPI
             #region init
             var builder = WebApplication.CreateBuilder(args);
 
-            users.Add("Jonathan", GetCode("Jonathan", "wachtwoord"));
-            users.Add("Robert Jan", GetCode("Robert Jan", "wachtwoord"));
-
+            AddDefault("Jorien", "Mirjam", "Maureen", "Robert Jan", "Anneloes", "Marilyn", "Jonathan", "Joëlle", "Noa");
+            string userString = "";
+            foreach (var user in users)
+            {
+                userString += $"Username: {user.Key,-15} Key: {user.Value:X}\n";
+            }
+            Console.WriteLine(userString);
             // Add services to the container.
             builder.Services.AddAuthorization();
 
@@ -86,7 +90,8 @@ namespace FamilyBoutAPI
                 }
                 return Results.Problem(statusCode: statusCode);
             });
-
+            
+            //Change Password
             app.MapPost("/passwordchange", async (HttpRequest rq) =>
             {
                 var dict = await FromBody(rq);
@@ -111,9 +116,12 @@ namespace FamilyBoutAPI
                 else return Results.BadRequest("Values are incomplete");
             });
 
+            //Check if user credentials are correct
             app.MapGet("/authorize", (string username, string code) =>
             {
-                return new { success = Authorize(username, Convert.ToInt64(code, 16)) };
+                if (Convert.ToInt64(code, 16) is long value)
+                    return Results.Ok(new { success = Authorize(username, value) });
+                return Results.BadRequest("Can't convert the 'code' value to type Int64. Make sure it is a correctly formatted hexadecimal value.");
             });
 
             app.Run();
@@ -159,12 +167,20 @@ namespace FamilyBoutAPI
 
         protected private static bool Authorize(string username, string password)
         {
-            return users[username] == GetCode(username, password);
+            return users.ContainsKey(username) && users[username] == GetCode(username, password);
         }
 
         protected private static bool Authorize(string username, long code)
         {
-            return users[username] == code;
+            return users.ContainsKey(username) && users[username] == code;
+        }
+
+        protected private static void AddDefault(params string[] users)
+        {
+            foreach (string user in users)
+            {
+                Program.users.Add(user, GetCode(user, "wachtwoord"));
+            }
         }
     }
 }
