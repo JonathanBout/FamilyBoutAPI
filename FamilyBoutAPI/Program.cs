@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using Newtonsoft.Json;
 using System.Net;
+using System.Web;
 
 namespace FamilyBoutAPI
 {
@@ -46,7 +47,16 @@ namespace FamilyBoutAPI
                 return new { views };
             });
 
-            app.MapGet("/login", (bool acc) => new {accepted = acc});
+            app.MapPost("/login", async (HttpRequest rq) =>
+            {
+                string body = "";
+                using (StreamReader stream = new StreamReader(rq.Body))
+                {
+                    body = await stream.ReadToEndAsync();
+                }
+
+                return string.Join("><", body.Split(','));
+            });
 
             app.Run();
         }
