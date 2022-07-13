@@ -61,20 +61,20 @@ namespace FamilyBoutAPI
                 if (jsonObj is not null)
                 {
                     int nameCode = 1;
-                    if (jsonObj.username)
+                    if (jsonObj.username is string username)
                     {
-                        for (int i = 0; i < jsonObj.username.Length; i++)
+                        for (int i = 0; i < username.Length; i++)
                         {
-                            char c = jsonObj.username[i];
+                            char c = username[i];
                             nameCode *= c + i;
                         }
                     }
                     int passwordCode = 1;
-                    if (jsonObj.password)
+                    if (jsonObj.password is string password)
                     {
-                        for (int i = 0; i < jsonObj.password.Length; i++)
+                        for (int i = 0; i < password.Length; i++)
                         {
-                            char c = jsonObj.password[i];
+                            char c = password[i];
                             nameCode *= c + i;
                         }
                     }
