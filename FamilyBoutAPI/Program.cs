@@ -41,9 +41,10 @@ namespace FamilyBoutAPI
                 return "Hehe :)";
             });
 
-            app.MapGet("/addview", () =>
+            app.MapGet("/addview", (bool? addup) =>
             {
-                views++;
+                if (addup is null || addup == true)
+                    views++;
                 return new { views };
             });
 
